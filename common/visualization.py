@@ -7,7 +7,6 @@
 
 import matplotlib
 matplotlib.use('Agg')
-
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation, writers
 from mpl_toolkits.mplot3d import Axes3D
@@ -70,6 +69,20 @@ def render_animation(keypoints, keypoints_metadata, poses, skeleton, fps, bitrat
      -- 'filename.mp4': render and export the animation as an h264 video (requires ffmpeg).
      -- 'filename.gif': render and export the animation a gif file (requires imagemagick).
     """
+    x_max, y_max, z_max = -np.inf, -np.inf, -np.inf
+    x_min, y_min, z_min = np.inf, np.inf, np.inf
+    #print (kps_sequence.shape)
+    _x_max, _x_min = np.amax(poses['Reconstruction'][:, :, 0]), np.amin(poses['Reconstruction'][:, :, 0])
+    _y_max, _y_min = np.amax(poses['Reconstruction'][:, :, 1]), np.amin(poses['Reconstruction'][:, :, 1])
+    _z_max, _z_min = np.amax(poses['Reconstruction'][:, :, 2]), np.amin(poses['Reconstruction'][:, :, 2])
+    if x_max < _x_max: x_max = _x_max
+    if y_max < _y_max: y_max = _y_max
+    if z_max < _z_max: z_max = _z_max
+    if x_min > _x_min: x_min = _x_min
+    if y_min > _y_min: y_min = _y_min
+    if z_min > _z_min: z_min = _z_min
+    radius = max(x_max - x_min, y_max - y_min, z_max - z_min) / 2
+
     plt.ioff()
     fig = plt.figure(figsize=(size*(1 + len(poses)), size))
     ax_in = fig.add_subplot(1, 1 + len(poses), 1)
@@ -81,13 +94,12 @@ def render_animation(keypoints, keypoints_metadata, poses, skeleton, fps, bitrat
     ax_3d = []
     lines_3d = []
     trajectories = []
-    radius = 1.7
     for index, (title, data) in enumerate(poses.items()):
         ax = fig.add_subplot(1, 1 + len(poses), index+2, projection='3d')
         ax.view_init(elev=15., azim=azim)
-        ax.set_xlim3d([-radius/2, radius/2])
-        ax.set_zlim3d([0, radius])
-        ax.set_ylim3d([-radius/2, radius/2])
+        ax.set_xlim3d([-radius, radius])
+        ax.set_ylim3d([-radius, radius])
+        ax.set_zlim3d([0, 2 * radius])
         try:
             ax.set_aspect('equal')
         except NotImplementedError:
@@ -144,8 +156,8 @@ def render_animation(keypoints, keypoints_metadata, poses, skeleton, fps, bitrat
         nonlocal initialized, image, lines, points
 
         for n, ax in enumerate(ax_3d):
-            ax.set_xlim3d([-radius/2 + trajectories[n][i, 0], radius/2 + trajectories[n][i, 0]])
-            ax.set_ylim3d([-radius/2 + trajectories[n][i, 1], radius/2 + trajectories[n][i, 1]])
+            ax.set_xlim3d([-radius + trajectories[n][i, 0], radius + trajectories[n][i, 0]])
+            ax.set_ylim3d([-radius + trajectories[n][i, 1], radius + trajectories[n][i, 1]])
 
         # Update 2D poses
         joints_right_2d = keypoints_metadata['keypoints_symmetry'][1]
